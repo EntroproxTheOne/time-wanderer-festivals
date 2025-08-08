@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -14,14 +14,30 @@ import { Label } from '@/components/ui/label';
 import { Settings, User, Moon, Sun, Monitor } from 'lucide-react';
 import { useTheme } from 'next-themes';
 
-export const UserSettings = () => {
+interface UserSettingsProps {
+  onDayNightToggle?: (isDayMode: boolean) => void;
+  isDayMode?: boolean;
+}
+
+export const UserSettings = ({ onDayNightToggle, isDayMode = true }: UserSettingsProps) => {
   const { theme, setTheme } = useTheme();
   const [timeFormat, setTimeFormat] = useState<'12h' | '24h'>('12h');
 
+  useEffect(() => {
+    const savedTimeFormat = localStorage.getItem('tnd-time-format') as '12h' | '24h';
+    if (savedTimeFormat) {
+      setTimeFormat(savedTimeFormat);
+    }
+  }, []);
+
   const handleTimeFormatChange = (checked: boolean) => {
     setTimeFormat(checked ? '24h' : '12h');
-    // Save to localStorage for persistence
     localStorage.setItem('tnd-time-format', checked ? '24h' : '12h');
+  };
+
+  const handleDayNightToggle = (checked: boolean) => {
+    onDayNightToggle?.(checked);
+    localStorage.setItem('tnd-day-mode', checked.toString());
   };
 
   const getThemeIcon = () => {
@@ -48,6 +64,18 @@ export const UserSettings = () => {
         
         <DropdownMenuGroup>
           <div className="px-2 py-2 space-y-4">
+            {/* Day/Night Mode Toggle */}
+            <div className="flex items-center justify-between">
+              <Label htmlFor="day-night-mode" className="text-sm">
+                Day mode
+              </Label>
+              <Switch
+                id="day-night-mode"
+                checked={isDayMode}
+                onCheckedChange={handleDayNightToggle}
+              />
+            </div>
+            
             {/* Time Format Toggle */}
             <div className="flex items-center justify-between">
               <Label htmlFor="time-format" className="text-sm">

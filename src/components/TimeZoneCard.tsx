@@ -11,9 +11,10 @@ interface TimeZoneCardProps {
   timezone: string;
   onRemove?: () => void;
   isMain?: boolean;
+  forceDayMode?: boolean;
 }
 
-export const TimeZoneCard = ({ city, country, timezone, onRemove, isMain = false }: TimeZoneCardProps) => {
+export const TimeZoneCard = ({ city, country, timezone, onRemove, isMain = false, forceDayMode }: TimeZoneCardProps) => {
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
   const [holidays, setHolidays] = useState<any[]>([]);
   const { toast } = useToast();
@@ -105,7 +106,7 @@ export const TimeZoneCard = ({ city, country, timezone, onRemove, isMain = false
   };
 
   const timeOfDay = getTimeOfDay();
-  const isDayTime = timeOfDay === 'morning' || timeOfDay === 'afternoon';
+  const isDayTime = forceDayMode !== undefined ? forceDayMode : (timeOfDay === 'morning' || timeOfDay === 'afternoon');
 
   const copyToClipboard = () => {
     const timeString = `${city}: ${formatTime(currentTime)} (${formatDate(currentTime)})`;
@@ -118,10 +119,12 @@ export const TimeZoneCard = ({ city, country, timezone, onRemove, isMain = false
 
   return (
     <Card className={`p-6 relative transition-all duration-300 hover:shadow-lg ${
-      timeOfDay === 'morning' ? 'bg-gradient-to-br from-timezone-morning/10 to-card' :
-      timeOfDay === 'afternoon' ? 'bg-gradient-to-br from-timezone-afternoon/10 to-card' :
-      timeOfDay === 'evening' ? 'bg-gradient-to-br from-timezone-evening/10 to-card' :
-      'bg-gradient-to-br from-timezone-night/20 to-card'
+      forceDayMode !== undefined ? 
+        (forceDayMode ? 'bg-gradient-to-br from-timezone-morning/10 to-card' : 'bg-gradient-to-br from-timezone-night/20 to-card') :
+        (timeOfDay === 'morning' ? 'bg-gradient-to-br from-timezone-morning/10 to-card' :
+         timeOfDay === 'afternoon' ? 'bg-gradient-to-br from-timezone-afternoon/10 to-card' :
+         timeOfDay === 'evening' ? 'bg-gradient-to-br from-timezone-evening/10 to-card' :
+         'bg-gradient-to-br from-timezone-night/20 to-card')
     }`}>
       {!isMain && onRemove && (
         <Button

@@ -32,7 +32,16 @@ export const WorldClock = () => {
       lng: -74.0060,
     },
   ]);
+  const [isDayMode, setIsDayMode] = useState(true);
   const { toast } = useToast();
+
+  // Load day mode preference from localStorage
+  useEffect(() => {
+    const savedDayMode = localStorage.getItem('tnd-day-mode');
+    if (savedDayMode !== null) {
+      setIsDayMode(savedDayMode === 'true');
+    }
+  }, []);
 
   // Load from localStorage on mount
   useEffect(() => {
@@ -134,7 +143,10 @@ export const WorldClock = () => {
               <p className="text-muted-foreground">Time & Daylight</p>
             </div>
           </div>
-          <UserSettings />
+          <UserSettings 
+            isDayMode={isDayMode}
+            onDayNightToggle={setIsDayMode}
+          />
         </div>
         <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
           Compare time zones across the world with live holiday and festival information
@@ -193,6 +205,7 @@ export const WorldClock = () => {
                 timezone={timezone.timezone}
                 onRemove={selectedTimeZones.length > 1 ? () => removeTimeZone(timezone.id) : undefined}
                 isMain={index === 0}
+                forceDayMode={isDayMode}
               />
             ))}
           </div>
