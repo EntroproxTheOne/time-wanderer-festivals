@@ -164,11 +164,13 @@ export const TimeZoneCard = ({ city, country, timezone, onRemove, isMain = false
         {holidays.length > 0 && (
           <div className="space-y-2">
             <h4 className="text-sm font-medium text-primary">Today's Celebrations</h4>
-            {holidays.map((holiday, index) => (
-              <Badge key={index} variant="secondary" className="text-xs">
-                🎉 {holiday.name}
-              </Badge>
-            ))}
+            <div className="flex flex-wrap gap-1">
+              {holidays.map((holiday, index) => (
+                <Badge key={index} variant="secondary" className="text-xs flex items-center gap-1">
+                  🎉 {holiday.name}
+                </Badge>
+              ))}
+            </div>
           </div>
         )}
 

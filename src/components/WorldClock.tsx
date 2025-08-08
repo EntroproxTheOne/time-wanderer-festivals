@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react';
 import { CitySearch } from './CitySearch';
 import { TimeZoneCard } from './TimeZoneCard';
+import { TimeZoneCalendar } from './TimeZoneCalendar';
+import { UserSettings } from './UserSettings';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Share2, Clock, Globe } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Share2, Clock, Globe, Calendar } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface City {
@@ -121,14 +124,17 @@ export const WorldClock = () => {
     <div className="space-y-8">
       {/* Header */}
       <div className="text-center space-y-4">
-        <div className="flex items-center justify-center gap-3 mb-4">
-          <div className="p-3 rounded-full bg-gradient-to-br from-primary to-primary/80 text-primary-foreground">
-            <Globe className="h-8 w-8" />
+        <div className="flex items-center justify-between">
+          <div className="flex items-center justify-center gap-3 mb-4 flex-1">
+            <div className="p-3 rounded-full bg-gradient-to-br from-primary to-primary/80 text-primary-foreground">
+              <Globe className="h-8 w-8" />
+            </div>
+            <div>
+              <h1 className="text-4xl font-bold tracking-tight">TnD</h1>
+              <p className="text-muted-foreground">Time & Daylight</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-4xl font-bold tracking-tight">TnD</h1>
-            <p className="text-muted-foreground">Time & Daylight</p>
-          </div>
+          <UserSettings />
         </div>
         <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
           Compare time zones across the world with live holiday and festival information
@@ -163,19 +169,39 @@ export const WorldClock = () => {
         </div>
       </Card>
 
-      {/* Time Comparison Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 gap-6">
-        {selectedTimeZones.map((timezone, index) => (
-          <TimeZoneCard
-            key={timezone.id}
-            city={timezone.name}
-            country={timezone.country}
-            timezone={timezone.timezone}
-            onRemove={selectedTimeZones.length > 1 ? () => removeTimeZone(timezone.id) : undefined}
-            isMain={index === 0}
-          />
-        ))}
-      </div>
+      {/* Main Content Tabs */}
+      <Tabs defaultValue="clocks" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-2 max-w-md mx-auto">
+          <TabsTrigger value="clocks" className="flex items-center gap-2">
+            <Clock className="h-4 w-4" />
+            World Clocks
+          </TabsTrigger>
+          <TabsTrigger value="calendar" className="flex items-center gap-2">
+            <Calendar className="h-4 w-4" />
+            Calendar View
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="clocks" className="space-y-6">
+          {/* Time Comparison Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 gap-6">
+            {selectedTimeZones.map((timezone, index) => (
+              <TimeZoneCard
+                key={timezone.id}
+                city={timezone.name}
+                country={timezone.country}
+                timezone={timezone.timezone}
+                onRemove={selectedTimeZones.length > 1 ? () => removeTimeZone(timezone.id) : undefined}
+                isMain={index === 0}
+              />
+            ))}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="calendar">
+          <TimeZoneCalendar selectedTimeZones={selectedTimeZones} />
+        </TabsContent>
+      </Tabs>
 
       {/* Time Differences */}
       {selectedTimeZones.length > 1 && (
