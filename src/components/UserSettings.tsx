@@ -12,7 +12,7 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Settings, User, Moon, Sun, Monitor } from 'lucide-react';
-import { useTheme } from 'next-themes';
+import { useTheme } from '@/components/ThemeProvider';
 
 interface UserSettingsProps {
   onDayNightToggle?: (isDayMode: boolean) => void;

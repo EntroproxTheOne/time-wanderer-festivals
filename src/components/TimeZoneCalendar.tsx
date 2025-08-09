@@ -114,15 +114,15 @@ export const TimeZoneCalendar = ({ selectedTimeZones }: TimeZoneCalendarProps) =
             <div className="overflow-x-auto">
               <div className="min-w-full">
                 {/* Header with cities */}
-                <div className="grid grid-cols-[80px_1fr] gap-2 mb-2">
-                  <div className="text-xs font-medium text-muted-foreground p-2">
+                <div className="grid grid-cols-[120px_1fr] gap-3 mb-4">
+                  <div className="text-sm font-medium text-muted-foreground p-3">
                     Time
                   </div>
-                  <div className={`grid grid-cols-${Math.min(selectedTimeZones.length, 4)} gap-2`}>
+                  <div className={`grid grid-cols-${Math.min(selectedTimeZones.length, 4)} gap-3`}>
                     {selectedTimeZones.slice(0, 4).map((tz) => (
-                      <div key={tz.id} className="text-xs font-medium text-center p-2 bg-accent rounded">
+                      <div key={tz.id} className="text-sm font-medium text-center p-3 bg-accent rounded-lg">
                         {tz.name}
-                        <div className="text-[10px] text-muted-foreground">
+                        <div className="text-xs text-muted-foreground mt-1">
                           {formatDateForTimezone(selectedDate, tz.timezone)}
                         </div>
                       </div>
@@ -131,13 +131,13 @@ export const TimeZoneCalendar = ({ selectedTimeZones }: TimeZoneCalendarProps) =
                 </div>
 
                 {/* Time rows */}
-                <div className="space-y-1">
+                <div className="space-y-2">
                   {hours.map((hour) => (
-                    <div key={hour} className="grid grid-cols-[80px_1fr] gap-2">
-                      <div className="text-xs p-2 text-right font-mono">
+                    <div key={hour} className="grid grid-cols-[120px_1fr] gap-3">
+                      <div className="text-sm p-3 text-right font-mono font-medium">
                         {hour.toString().padStart(2, '0')}:00
                       </div>
-                      <div className={`grid grid-cols-${Math.min(selectedTimeZones.length, 4)} gap-2`}>
+                      <div className={`grid grid-cols-${Math.min(selectedTimeZones.length, 4)} gap-3`}>
                         {selectedTimeZones.slice(0, 4).map((tz) => {
                           const timeAtHour = new Date(selectedDate);
                           timeAtHour.setHours(hour, 0, 0, 0);
@@ -147,7 +147,7 @@ export const TimeZoneCalendar = ({ selectedTimeZones }: TimeZoneCalendarProps) =
                           return (
                             <div
                               key={`${tz.id}-${hour}`}
-                              className={`text-xs p-2 rounded text-center font-mono ${getHourColor(localHour)}`}
+                              className={`text-sm p-3 rounded-lg text-center font-mono font-medium ${getHourColor(localHour)}`}
                             >
                               {localTime}
                             </div>
@@ -171,19 +171,19 @@ export const TimeZoneCalendar = ({ selectedTimeZones }: TimeZoneCalendarProps) =
               </h4>
             </div>
             
-            <div className="space-y-3">
+            <div className="space-y-4">
               {selectedTimeZones.map((tz) => (
-                <Card key={tz.id} className="p-4">
+                <Card key={tz.id} className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h5 className="font-medium">{tz.name}</h5>
+                      <h5 className="text-lg font-medium">{tz.name}</h5>
                       <p className="text-sm text-muted-foreground">{tz.country}</p>
                     </div>
                     <div className="text-right">
-                      <div className="text-lg font-mono">
+                      <div className="text-2xl font-mono font-bold">
                         {formatTimeForTimezone(selectedDate, tz.timezone)}
                       </div>
-                      <div className="text-xs text-muted-foreground">
+                      <div className="text-sm text-muted-foreground">
                         {formatDateForTimezone(selectedDate, tz.timezone)}
                       </div>
                     </div>
