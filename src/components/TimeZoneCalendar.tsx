@@ -3,8 +3,10 @@ import { Calendar } from '@/components/ui/calendar';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { CalendarIcon, Clock } from 'lucide-react';
-import { format, addDays, startOfWeek } from 'date-fns';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { CalendarIcon, Clock, ChevronLeft, ChevronRight, Settings } from 'lucide-react';
+import { format, addDays, startOfWeek, isWeekend, isSameDay, addMonths, subMonths } from 'date-fns';
 
 interface TimeZone {
   id: string;
@@ -22,6 +24,9 @@ interface TimeZoneCalendarProps {
 export const TimeZoneCalendar = ({ selectedTimeZones }: TimeZoneCalendarProps) => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [calendarView, setCalendarView] = useState<'grid' | 'list'>('grid');
+  const [weekendHighlight, setWeekendHighlight] = useState(true);
+  const [selectedHour, setSelectedHour] = useState<number | null>(null);
+  const [showSettings, setShowSettings] = useState(false);
 
   // Generate week days for calendar view
   const getWeekDays = () => {
@@ -55,14 +60,32 @@ export const TimeZoneCalendar = ({ selectedTimeZones }: TimeZoneCalendarProps) =
     }
   };
 
-  const getHourColor = (hour: number) => {
-    if (hour >= 6 && hour < 12) return 'bg-yellow-100 dark:bg-yellow-900/20'; // Morning
-    if (hour >= 12 && hour < 18) return 'bg-blue-100 dark:bg-blue-900/20'; // Afternoon
-    if (hour >= 18 && hour < 22) return 'bg-orange-100 dark:bg-orange-900/20'; // Evening
-    return 'bg-indigo-100 dark:bg-indigo-900/20'; // Night
+  const getHourColor = (hour: number, isWeekendDay: boolean = false) => {
+    let baseColor = '';
+    if (hour >= 6 && hour < 12) baseColor = 'bg-yellow-100 dark:bg-yellow-900/20'; // Morning
+    else if (hour >= 12 && hour < 18) baseColor = 'bg-blue-100 dark:bg-blue-900/20'; // Afternoon
+    else if (hour >= 18 && hour < 22) baseColor = 'bg-orange-100 dark:bg-orange-900/20'; // Evening
+    else baseColor = 'bg-indigo-100 dark:bg-indigo-900/20'; // Night
+    
+    if (weekendHighlight && isWeekendDay) {
+      baseColor += ' ring-2 ring-pink-200 dark:ring-pink-800';
+    }
+    
+    return baseColor;
+  };
+
+  const getDateNumbers = () => {
+    const start = new Date(selectedDate);
+    start.setDate(1);
+    const daysInMonth = new Date(start.getFullYear(), start.getMonth() + 1, 0).getDate();
+    return Array.from({ length: daysInMonth }, (_, i) => i + 1);
   };
 
   const hours = Array.from({ length: 24 }, (_, i) => i);
+
+  const navigateMonth = (direction: 'prev' | 'next') => {
+    setSelectedDate(direction === 'prev' ? subMonths(selectedDate, 1) : addMonths(selectedDate, 1));
+  };
 
   return (
     <Card className="p-6">
@@ -73,7 +96,14 @@ export const TimeZoneCalendar = ({ selectedTimeZones }: TimeZoneCalendarProps) =
             <CalendarIcon className="h-5 w-5 text-primary" />
             <h3 className="text-lg font-semibold">Time Zone Calendar</h3>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-center">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowSettings(!showSettings)}
+            >
+              <Settings className="h-4 w-4" />
+            </Button>
             <Button
               variant={calendarView === 'grid' ? 'default' : 'outline'}
               size="sm"
@@ -91,74 +121,168 @@ export const TimeZoneCalendar = ({ selectedTimeZones }: TimeZoneCalendarProps) =
           </div>
         </div>
 
-        {/* Date Picker */}
-        <div className="flex items-center gap-4">
-          <Calendar
-            mode="single"
-            selected={selectedDate}
-            onSelect={(date) => date && setSelectedDate(date)}
-            className="rounded-md border"
-          />
+        {/* Settings Panel */}
+        {showSettings && (
+          <Card className="p-4 bg-accent/5">
+            <div className="space-y-4">
+              <h4 className="text-sm font-medium">Calendar Settings</h4>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="weekend-highlight" className="text-sm">Weekend highlighting</Label>
+                <Switch
+                  id="weekend-highlight"
+                  checked={weekendHighlight}
+                  onCheckedChange={setWeekendHighlight}
+                />
+              </div>
+            </div>
+          </Card>
+        )}
+
+        {/* Month Navigation */}
+        <div className="flex items-center justify-between">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => navigateMonth('prev')}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <h4 className="text-lg font-semibold">
+            {format(selectedDate, 'MMMM yyyy')}
+          </h4>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => navigateMonth('next')}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
         </div>
 
         {/* Calendar Grid View */}
         {calendarView === 'grid' && (
           <div className="space-y-4">
-            <div className="text-center">
-              <h4 className="text-sm font-medium text-muted-foreground">
-                {format(selectedDate, 'EEEE, MMMM d, yyyy')}
-              </h4>
+            {/* Date selector */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-2">
+              {getDateNumbers().slice(0, 31).map((day) => {
+                const dateForDay = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), day);
+                const isSelected = isSameDay(dateForDay, selectedDate);
+                const isWeekendDay = isWeekend(dateForDay);
+                
+                return (
+                  <Button
+                    key={day}
+                    variant={isSelected ? "default" : "outline"}
+                    size="sm"
+                    className={`min-w-[40px] h-10 ${isWeekendDay && weekendHighlight ? 'bg-pink-50 hover:bg-pink-100 dark:bg-pink-950 dark:hover:bg-pink-900' : ''}`}
+                    onClick={() => setSelectedDate(dateForDay)}
+                  >
+                    <div className="text-center">
+                      <div className="text-sm font-bold">{day}</div>
+                      <div className="text-xs">{format(dateForDay, 'EEE')}</div>
+                    </div>
+                  </Button>
+                );
+              })}
             </div>
             
-            {/* Time Grid */}
+            {/* Time Zone Grid - WorldTimeBuddy Style */}
             <div className="overflow-x-auto">
-              <div className="min-w-full">
-                {/* Header with cities */}
-                <div className="grid grid-cols-[120px_1fr] gap-3 mb-4">
-                  <div className="text-sm font-medium text-muted-foreground p-3">
-                    Time
-                  </div>
-                  <div className={`grid grid-cols-${Math.min(selectedTimeZones.length, 4)} gap-3`}>
-                    {selectedTimeZones.slice(0, 4).map((tz) => (
-                      <div key={tz.id} className="text-sm font-medium text-center p-3 bg-accent rounded-lg">
-                        {tz.name}
-                        <div className="text-xs text-muted-foreground mt-1">
-                          {formatDateForTimezone(selectedDate, tz.timezone)}
+              <div className="min-w-full border rounded-lg">
+                {/* Header */}
+                <div className="bg-accent/10 border-b">
+                  <div className="grid grid-cols-[200px_1fr] gap-0">
+                    <div className="p-3 border-r font-medium text-sm">
+                      {format(selectedDate, 'EEE, MMM d')}
+                    </div>
+                    <div className="flex">
+                      {hours.map((hour) => (
+                        <div
+                          key={hour}
+                          className={`min-w-[40px] p-2 text-xs text-center border-r font-mono cursor-pointer transition-colors ${
+                            selectedHour === hour ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'
+                          }`}
+                          onClick={() => setSelectedHour(selectedHour === hour ? null : hour)}
+                        >
+                          {hour}
                         </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
                 </div>
-
-                {/* Time rows */}
-                <div className="space-y-2">
-                  {hours.map((hour) => (
-                    <div key={hour} className="grid grid-cols-[120px_1fr] gap-3">
-                      <div className="text-sm p-3 text-right font-mono font-medium">
-                        {hour.toString().padStart(2, '0')}:00
+                
+                {/* Time Zone Rows */}
+                {selectedTimeZones.map((tz, index) => {
+                  const currentTimeInTz = new Date().toLocaleString('en-US', { 
+                    timeZone: tz.timezone, 
+                    hour12: false, 
+                    hour: '2-digit' 
+                  });
+                  const currentHour = parseInt(currentTimeInTz);
+                  const isWeekendDay = isWeekend(selectedDate);
+                  
+                  return (
+                    <div key={tz.id} className={`grid grid-cols-[200px_1fr] gap-0 ${index < selectedTimeZones.length - 1 ? 'border-b' : ''}`}>
+                      <div className="p-3 border-r">
+                        <div className="font-medium text-sm">{tz.name}</div>
+                        <div className="text-xs text-muted-foreground">{tz.country}</div>
+                        <div className="text-sm font-mono mt-1">
+                          {formatTimeForTimezone(selectedDate, tz.timezone)}
+                        </div>
                       </div>
-                      <div className={`grid grid-cols-${Math.min(selectedTimeZones.length, 4)} gap-3`}>
-                        {selectedTimeZones.slice(0, 4).map((tz) => {
+                      <div className="flex">
+                        {hours.map((hour) => {
                           const timeAtHour = new Date(selectedDate);
                           timeAtHour.setHours(hour, 0, 0, 0);
                           const localTime = formatTimeForTimezone(timeAtHour, tz.timezone);
                           const localHour = parseInt(localTime.split(':')[0]);
+                          const isCurrentHour = hour === currentHour;
+                          const isSelectedHour = selectedHour === hour;
                           
                           return (
                             <div
-                              key={`${tz.id}-${hour}`}
-                              className={`text-sm p-3 rounded-lg text-center font-mono font-medium ${getHourColor(localHour)}`}
+                              key={hour}
+                              className={`min-w-[40px] p-2 text-xs text-center border-r font-mono transition-all ${
+                                getHourColor(localHour, isWeekendDay)
+                              } ${isCurrentHour ? 'ring-2 ring-primary ring-inset' : ''} ${
+                                isSelectedHour ? 'ring-2 ring-blue-400 ring-inset' : ''
+                              } hover:bg-opacity-80 cursor-pointer`}
+                              onClick={() => setSelectedHour(selectedHour === hour ? null : hour)}
+                              title={`${localTime} in ${tz.name}`}
                             >
-                              {localTime}
+                              {localTime.split(':')[0]}
                             </div>
                           );
                         })}
                       </div>
                     </div>
-                  ))}
-                </div>
+                  );
+                })}
               </div>
             </div>
+            
+            {/* Selected Hour Info */}
+            {selectedHour !== null && (
+              <Card className="p-4 bg-blue-50 dark:bg-blue-950/20">
+                <h4 className="font-medium mb-2">
+                  Times at {selectedHour.toString().padStart(2, '0')}:00 on {format(selectedDate, 'MMM d, yyyy')}
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                  {selectedTimeZones.map((tz) => {
+                    const timeAtHour = new Date(selectedDate);
+                    timeAtHour.setHours(selectedHour, 0, 0, 0);
+                    const localTime = formatTimeForTimezone(timeAtHour, tz.timezone);
+                    
+                    return (
+                      <div key={tz.id} className="flex justify-between items-center p-2 bg-white dark:bg-gray-800 rounded">
+                        <span className="text-sm">{tz.name}</span>
+                        <span className="font-mono font-bold">{localTime}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </Card>
+            )}
           </div>
         )}
 
