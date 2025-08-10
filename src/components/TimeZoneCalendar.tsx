@@ -7,6 +7,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { CalendarIcon, Clock, ChevronLeft, ChevronRight, Settings } from 'lucide-react';
 import { format, addDays, startOfWeek, isWeekend, isSameDay, addMonths, subMonths } from 'date-fns';
+import { fetchHolidays, getHolidayForDate, Holiday } from '@/data/holidays';
 
 interface TimeZone {
   id: string;
@@ -19,14 +20,44 @@ interface TimeZone {
 
 interface TimeZoneCalendarProps {
   selectedTimeZones: TimeZone[];
+  showHolidays?: boolean;
 }
 
-export const TimeZoneCalendar = ({ selectedTimeZones }: TimeZoneCalendarProps) => {
+export const TimeZoneCalendar = ({ selectedTimeZones, showHolidays = true }: TimeZoneCalendarProps) => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [calendarView, setCalendarView] = useState<'grid' | 'list'>('grid');
   const [weekendHighlight, setWeekendHighlight] = useState(true);
   const [selectedHour, setSelectedHour] = useState<number | null>(null);
   const [showSettings, setShowSettings] = useState(false);
+  const [holidays, setHolidays] = useState<{ [country: string]: Holiday[] }>({});
+
+  // Load holidays when time zones change
+  useEffect(() => {
+    if (!showHolidays) return;
+    
+    const loadHolidays = async () => {
+      const holidayData: { [country: string]: Holiday[] } = {};
+      const uniqueCountries = [...new Set(selectedTimeZones.map(tz => 
+        tz.country.toLowerCase() === 'united states' ? 'US' :
+        tz.country.toLowerCase() === 'united kingdom' ? 'GB' :
+        tz.country.toLowerCase() === 'india' ? 'IN' :
+        tz.country.toLowerCase() === 'japan' ? 'JP' :
+        tz.country.slice(0, 2).toUpperCase()
+      ))];
+
+      for (const country of uniqueCountries) {
+        try {
+          holidayData[country] = await fetchHolidays(country, selectedDate.getFullYear());
+        } catch (error) {
+          console.error(`Failed to load holidays for ${country}:`, error);
+        }
+      }
+      
+      setHolidays(holidayData);
+    };
+
+    loadHolidays();
+  }, [selectedTimeZones, selectedDate, showHolidays]);
 
   // Generate week days for calendar view
   const getWeekDays = () => {
@@ -169,17 +200,40 @@ export const TimeZoneCalendar = ({ selectedTimeZones }: TimeZoneCalendarProps) =
                 const isSelected = isSameDay(dateForDay, selectedDate);
                 const isWeekendDay = isWeekend(dateForDay);
                 
+                // Get holiday for this date
+                const holiday = showHolidays ? Object.values(holidays).flat().find(h => 
+                  getHolidayForDate([h], dateForDay)
+                ) : null;
+                
                 return (
                   <Button
                     key={day}
                     variant={isSelected ? "default" : "outline"}
                     size="sm"
-                    className={`min-w-[40px] h-10 ${isWeekendDay && weekendHighlight ? 'bg-pink-50 hover:bg-pink-100 dark:bg-pink-950 dark:hover:bg-pink-900' : ''}`}
+                    className={`min-w-[50px] h-12 relative ${
+                      isSelected 
+                        ? 'bg-primary text-primary-foreground font-bold' 
+                        : isWeekendDay && weekendHighlight 
+                          ? 'bg-pink-50 hover:bg-pink-100 dark:bg-pink-950 dark:hover:bg-pink-900' 
+                          : holiday 
+                            ? 'bg-success/10 hover:bg-success/20 border-success/30' 
+                            : ''
+                    }`}
                     onClick={() => setSelectedDate(dateForDay)}
+                    title={holiday ? `${holiday.name} ${holiday.emoji}` : undefined}
                   >
                     <div className="text-center">
-                      <div className="text-sm font-bold">{day}</div>
-                      <div className="text-xs">{format(dateForDay, 'EEE')}</div>
+                      <div className={`text-sm font-bold ${isSelected ? 'text-primary-foreground' : 'text-foreground'}`}>
+                        {day}
+                      </div>
+                      <div className={`text-xs ${isSelected ? 'text-primary-foreground/80' : 'text-muted-foreground'}`}>
+                        {format(dateForDay, 'EEE')}
+                      </div>
+                      {holiday && showHolidays && (
+                        <div className="absolute -top-1 -right-1 text-xs">
+                          {holiday.emoji}
+                        </div>
+                      )}
                     </div>
                   </Button>
                 );
@@ -192,7 +246,7 @@ export const TimeZoneCalendar = ({ selectedTimeZones }: TimeZoneCalendarProps) =
                 {/* Header */}
                 <div className="bg-accent/10 border-b">
                   <div className="grid grid-cols-[200px_1fr] gap-0">
-                    <div className="p-3 border-r font-medium text-sm">
+                    <div className="p-3 border-r font-medium text-sm text-foreground">
                       {format(selectedDate, 'EEE, MMM d')}
                     </div>
                     <div className="flex">
@@ -290,24 +344,34 @@ export const TimeZoneCalendar = ({ selectedTimeZones }: TimeZoneCalendarProps) =
         {calendarView === 'list' && (
           <div className="space-y-4">
             <div className="text-center">
-              <h4 className="text-sm font-medium text-muted-foreground">
+              <h4 className="text-lg font-semibold text-foreground">
                 {format(selectedDate, 'EEEE, MMMM d, yyyy')}
               </h4>
+              {/* Show holiday for selected date */}
+              {showHolidays && Object.values(holidays).flat().map(h => {
+                const holiday = getHolidayForDate([h], selectedDate);
+                return holiday ? (
+                  <div key={h.date} className="flex items-center justify-center gap-2 mt-2">
+                    <span className="text-lg">{holiday.emoji}</span>
+                    <span className="text-sm text-muted-foreground">{holiday.name}</span>
+                  </div>
+                ) : null;
+              })}
             </div>
             
             <div className="space-y-4">
               {selectedTimeZones.map((tz) => (
-                <Card key={tz.id} className="p-6">
+                <Card key={tz.id} className="p-8">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h5 className="text-lg font-medium">{tz.name}</h5>
-                      <p className="text-sm text-muted-foreground">{tz.country}</p>
+                      <h5 className="text-xl font-semibold">{tz.name}</h5>
+                      <p className="text-base text-muted-foreground">{tz.country}</p>
                     </div>
                     <div className="text-right">
-                      <div className="text-2xl font-mono font-bold">
+                      <div className="text-3xl font-mono font-bold">
                         {formatTimeForTimezone(selectedDate, tz.timezone)}
                       </div>
-                      <div className="text-sm text-muted-foreground">
+                      <div className="text-base text-muted-foreground">
                         {formatDateForTimezone(selectedDate, tz.timezone)}
                       </div>
                     </div>

@@ -3,11 +3,14 @@ import { CitySearch } from './CitySearch';
 import { TimeZoneCard } from './TimeZoneCard';
 import { TimeZoneCalendar } from './TimeZoneCalendar';
 import { UserSettings } from './UserSettings';
+import { Settings } from './Settings';
+import { AdContainer } from './AdContainer';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Share2, Clock, Globe, Calendar } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useAutoTheme } from '@/hooks/useAutoTheme';
 
 interface City {
   name: string;
@@ -32,14 +35,16 @@ export const WorldClock = () => {
       lng: -74.0060,
     },
   ]);
-  const [isDayMode, setIsDayMode] = useState(true);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showHolidays, setShowHolidays] = useState(true);
   const { toast } = useToast();
+  const { isNightTime } = useAutoTheme();
 
-  // Load day mode preference from localStorage
+  // Load holiday preference from localStorage
   useEffect(() => {
-    const savedDayMode = localStorage.getItem('tnd-day-mode');
-    if (savedDayMode !== null) {
-      setIsDayMode(savedDayMode === 'true');
+    const savedShowHolidays = localStorage.getItem('tnd-show-holidays');
+    if (savedShowHolidays !== null) {
+      setShowHolidays(savedShowHolidays === 'true');
     }
   }, []);
 
@@ -144,8 +149,7 @@ export const WorldClock = () => {
             </div>
           </div>
           <UserSettings 
-            isDayMode={isDayMode}
-            onDayNightToggle={setIsDayMode}
+            onSettingsClick={() => setShowSettings(true)}
           />
         </div>
         <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
@@ -182,17 +186,28 @@ export const WorldClock = () => {
       </Card>
 
       {/* Main Content Tabs */}
-      <Tabs defaultValue="clocks" className="space-y-6">
+      <Tabs defaultValue="calendar" className="space-y-6">
         <TabsList className="grid w-full grid-cols-2 max-w-md mx-auto">
-          <TabsTrigger value="clocks" className="flex items-center gap-2">
-            <Clock className="h-4 w-4" />
-            World Clocks
-          </TabsTrigger>
           <TabsTrigger value="calendar" className="flex items-center gap-2">
             <Calendar className="h-4 w-4" />
             Calendar View
           </TabsTrigger>
+          <TabsTrigger value="clocks" className="flex items-center gap-2">
+            <Clock className="h-4 w-4" />
+            Time View
+          </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="calendar" className="space-y-6">
+          <TimeZoneCalendar 
+            selectedTimeZones={selectedTimeZones} 
+            showHolidays={showHolidays}
+          />
+          {/* Rectangle Ad below calendar */}
+          <div className="flex justify-center">
+            <AdContainer type="rectangle" className="hidden md:block" />
+          </div>
+        </TabsContent>
 
         <TabsContent value="clocks" className="space-y-6">
           {/* Time Comparison Grid */}
@@ -205,14 +220,10 @@ export const WorldClock = () => {
                 timezone={timezone.timezone}
                 onRemove={selectedTimeZones.length > 1 ? () => removeTimeZone(timezone.id) : undefined}
                 isMain={index === 0}
-                forceDayMode={isDayMode}
+                forceDayMode={!isNightTime}
               />
             ))}
           </div>
-        </TabsContent>
-
-        <TabsContent value="calendar">
-          <TimeZoneCalendar selectedTimeZones={selectedTimeZones} />
         </TabsContent>
       </Tabs>
 
@@ -251,6 +262,21 @@ export const WorldClock = () => {
             })}
           </div>
         </Card>
+      )}
+
+      {/* Horizontal Ad at bottom */}
+      <AdContainer type="horizontal" className="mt-8" />
+
+      {/* Settings Modal */}
+      {showSettings && (
+        <Settings
+          showHolidays={showHolidays}
+          onShowHolidaysChange={(value) => {
+            setShowHolidays(value);
+            localStorage.setItem('tnd-show-holidays', value.toString());
+          }}
+          onClose={() => setShowSettings(false)}
+        />
       )}
     </div>
   );
