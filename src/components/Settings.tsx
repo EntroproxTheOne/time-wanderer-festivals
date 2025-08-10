@@ -120,7 +120,7 @@ export const Settings = ({ showHolidays, onShowHolidaysChange, onClose }: Settin
                     </Button>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Theme automatically switches based on your local time (7 PM - 7 AM = dark theme)
+                    Auto mode switches between light and dark based on local time (7 PM - 7 AM = dark theme)
                   </p>
                 </div>
               </Card>

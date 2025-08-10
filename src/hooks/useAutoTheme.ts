@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useTheme } from '@/components/ThemeProvider';
 
 export const useAutoTheme = () => {
-  const { setTheme } = useTheme();
+  const { theme, setTheme } = useTheme();
   const [isNightTime, setIsNightTime] = useState(false);
 
   useEffect(() => {
@@ -20,8 +20,10 @@ export const useAutoTheme = () => {
         const isNight = currentHour >= 19 || currentHour < 7;
         setIsNightTime(isNight);
         
-        // Auto-switch theme based on time
-        setTheme(isNight ? 'dark' : 'light');
+        // Only auto-switch theme if user hasn't set a preference
+        if (theme === 'system') {
+          setTheme(isNight ? 'dark' : 'light');
+        }
       } catch (error) {
         console.error('Failed to detect timezone or time:', error);
         // Fallback to system preference
@@ -36,7 +38,7 @@ export const useAutoTheme = () => {
     const interval = setInterval(updateThemeBasedOnTime, 60000);
 
     return () => clearInterval(interval);
-  }, [setTheme]);
+  }, [theme, setTheme]);
 
   return { isNightTime };
 };
