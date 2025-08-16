@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import TndIcon from './TndIcon';
 import { Card } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -130,7 +131,10 @@ export const Settings = ({ showHolidays, onShowHolidaysChange, onClose }: Settin
               <Card className="p-4">
                 <div className="space-y-4">
                   <div className="text-center space-y-2">
-                    <h3 className="text-lg font-semibold">TnD - Time & Daylight</h3>
+                    <div className="flex items-center gap-2">
+                      <TndIcon className="h-6 w-6" />
+                      <h3 className="text-lg font-semibold sr-only">Time & Daylight</h3>
+                    </div>
                     <p className="text-sm text-muted-foreground">Version 2.0</p>
                   </div>
                   

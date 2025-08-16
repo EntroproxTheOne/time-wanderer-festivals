@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
+import TndIcon from './TndIcon';
 import { CitySearch } from './CitySearch';
+import { useGeolocation } from '@/hooks/useGeolocation';
 import { TimeZoneCard } from './TimeZoneCard';
 import { TimeZoneCalendar } from './TimeZoneCalendar';
 import { UserSettings } from './UserSettings';
@@ -25,21 +27,14 @@ interface TimeZone extends City {
 }
 
 export const WorldClock = () => {
-  const [selectedTimeZones, setSelectedTimeZones] = useState<TimeZone[]>([
-    {
-      id: '1',
-      name: 'New York',
-      country: 'United States',
-      timezone: 'America/New_York',
-      lat: 40.7128,
-      lng: -74.0060,
-    },
-  ]);
+  const [selectedTimeZones, setSelectedTimeZones] = useState<TimeZone[]>([]);
   const [showSettings, setShowSettings] = useState(false);
   const [showHolidays, setShowHolidays] = useState(true);
   const { toast } = useToast();
   const { isNightTime } = useAutoTheme();
 
+  const { loading: geoLoading, error: geoError, nearestCity } = useGeolocation();
+  
   // Load holiday preference from localStorage
   useEffect(() => {
     const savedShowHolidays = localStorage.getItem('tnd-show-holidays');
@@ -48,20 +43,51 @@ export const WorldClock = () => {
     }
   }, []);
 
-  // Load from localStorage on mount
+  // Load from localStorage on mount or use geolocation
   useEffect(() => {
     const saved = localStorage.getItem('tnd-timezones');
+    
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
         if (parsed.length > 0) {
           setSelectedTimeZones(parsed);
+          return; // If we have saved preferences, use those
         }
       } catch (error) {
         console.error('Failed to parse saved timezones:', error);
       }
     }
-  }, []);
+
+    // If no saved preferences and we have geolocation data, use the nearest city
+    if (!geoLoading && nearestCity && !geoError) {
+      const defaultCity: TimeZone = {
+        id: 'default',
+        name: nearestCity.name,
+        country: nearestCity.country,
+        timezone: nearestCity.timezone,
+        lat: nearestCity.latitude,
+        lng: nearestCity.longitude,
+      };
+      setSelectedTimeZones([defaultCity]);
+      
+      // Inform user about geolocation-based selection
+      toast({
+        title: "Location detected",
+        description: `Showing time for ${nearestCity.name}, ${nearestCity.stateCode || nearestCity.country}`,
+      });
+    } else if (!geoLoading && geoError) {
+      // If geolocation fails, use New York as default
+      setSelectedTimeZones([{
+        id: 'default',
+        name: 'New York City',
+        country: 'United States',
+        timezone: 'America/New_York',
+        lat: 40.7128,
+        lng: -74.0060,
+      }]);
+    }
+  }, [geoLoading, nearestCity, geoError, toast]);
 
   // Save to localStorage whenever selection changes
   useEffect(() => {
@@ -141,12 +167,9 @@ export const WorldClock = () => {
         <div className="flex items-center justify-between">
           <div className="flex items-center justify-center gap-3 mb-4 flex-1">
             <div className="p-3 rounded-full bg-gradient-to-br from-primary to-primary/80 text-primary-foreground">
-              <Globe className="h-8 w-8" />
+              <TndIcon className="h-8 w-8" />
             </div>
-            <div>
-              <h1 className="text-4xl font-bold tracking-tight">TnD</h1>
-              <p className="text-muted-foreground">Time & Daylight</p>
-            </div>
+            <h1 className="sr-only">Time & Daylight</h1>
           </div>
           <UserSettings 
             onSettingsClick={() => setShowSettings(true)}
